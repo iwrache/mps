@@ -117,14 +117,14 @@ def OutputMPSMatrix(A,SMatrix,B,Dimension,Length,str,l):
         for i in range(Dimension*Length):
             print('第%d位的第%d个矩阵：'%(int(i/Dimension)+1,i+1-Dimension*int(i/Dimension)))
             print(A[i])
-        print(A[2]*A[5]*A[8]*A[13]*A[19]*A[22]*LeftExtraNumber)
+        #print(A[2]*A[5]*A[8]*A[13]*A[19]*A[22]*LeftExtraNumber)
         #左数第n位第m个元素对应于A中的第(n-1)*Dimension+m-1个元素，如这里的对应于长度为6，维数为4的210132
 
     elif str=='right':
         for i in range(Dimension*Length):
             print('第%d位的第%d个矩阵：'%(Length-int(i/Dimension),i+1-Dimension*int(i/Dimension)))
             print(B[i])
-        print(B[22]*B[17]*B[12]*B[9]*B[7]*B[2]*RightExtraNumber)
+        #print(B[22]*B[17]*B[12]*B[9]*B[7]*B[2]*RightExtraNumber)
         #左数第n位第m个元素对应于A中的第(Length-n)*Dimension+m-1个元素，如这里的对应于长度为6，维数为4的210132
 
     elif str=='mixed':
@@ -139,7 +139,7 @@ def OutputMPSMatrix(A,SMatrix,B,Dimension,Length,str,l):
             print('第%d位的第%d个矩阵：'%(Length-int(i/Dimension),i+1-Dimension*int(i/Dimension)))
             print(B[i])
 
-        print(A[2]*A[5]*SMatrix*B[12]*B[9]*B[7]*B[2])
+        #print(A[2]*A[5]*SMatrix*B[12]*B[9]*B[7]*B[2])
         #将左规范和右规范结合起来即可，如这里对应的数是长度为6，维数为4,site为2的210132          
 
 
@@ -187,7 +187,7 @@ def Overlap(A,SMatrix,B,A_1,Dimension,Length,str,l):
     print ('人家把overlap的结果算出来了的喵~你不夸夸人家吗~（害羞的低下头）')
 
 
-def Reduced_Density_Matrix(A,SMatrix,B,Reduced_l,Dimension,Length):#还没有验证，不知道这么写的对不对
+def Reduced_Density_Matrix(A,SMatrix,B,Reduced_l,Dimension,Length):#还没有验证，不知道这么写对不对
     if str=='left':#之前是左规范的结果,因为左规范了，所以可以直接用书上121式
         for i in range(Length,Reduced_l,-1):
             if i==Length:
@@ -338,6 +338,46 @@ def SVD_compressing(List,Length,Dimension,Truncated_Dimension):#List为要压缩
     return Left_B    
 
 
+def Compress_a_matrix_product_state_iteratively(List,Length,Dimension,Truncated_Dimension):#List为要压缩的矩阵#应该有bug，还没调
+    M=SVD_compressing(List,Length,Dimension,Truncated_Dimension)#SVD压缩后为一个右规范的MPS
+    IterationTimes=1#设置最大迭代次数
+    site=1#表明优化到了第site个
+
+    while IterationTimes<=10:
+        #if : #这里是达到了迭代条件，即书上150那个式子，我还没弄懂那个式子怎么推出来的，先空着
+            #break
+        if site==1:
+            L=1
+        if site==L:
+            R=1
+        
+        for i in range(site):
+            if i==0:
+                BeforeResult=1#最里面一项的result是等于1的
+            else:
+                BeforeResult=L
+            L=0#每次算完里面的都更新一下
+            for j in range(Dimension):      
+                L+=np.transpose(M[i*Dimension+j])*BeforeResult*List[i*Dimension+j]#因为这里是实数，所以直接转置就行
+        
+        for i in range(Length,site,-1):
+            if i==0:
+                BeforeResult=1#最里面一项的result是等于1的
+            else:
+                BeforeResult=L
+            L=0#每次算完里面的都更新一下
+            for j in range(Dimension):      
+                R+=np.transpose(M[i*Dimension+j])*BeforeResult*List[i*Dimension+j]#因为这里是实数，所以直接转置就行    
+
+        for i in range(Dimension):
+            M[site*Dimension+i]=L*M[site*Dimension+i]*R
+
+        site+=1
+        IterationTimes+=1
+
+    return M        
+        
+
 #以下是主函数部分
 while(Length!=0):
     Length=int(input("Please input Length :"))
@@ -460,7 +500,7 @@ while(Length!=0):
         for i in range(Dimension*Length):
             print('左规范后第%d位的第%d个矩阵：'%(int(i/Dimension)+1,i+1-Dimension*int(i/Dimension)))
             print(Left_Canonical[i])
-        print(Left_Canonical[2]*Left_Canonical[5]*Left_Canonical[8]*Left_Canonical[13]*Left_Canonical[19]*Left_Canonical[22]*LeftExtraNumber)
+        #print(Left_Canonical[2]*Left_Canonical[5]*Left_Canonical[8]*Left_Canonical[13]*Left_Canonical[19]*Left_Canonical[22]*LeftExtraNumber)
         #左数第n位第m个元素对应于A中的第(n-1)*Dimension+m-1个元素，如这里的对应于长度为6，维数为4的210132
 
     elif str3=='no':
@@ -476,7 +516,7 @@ while(Length!=0):
         for i in range(Dimension*Length):
             print('右规范后第%d位的第%d个矩阵：'%(int(i/Dimension)+1,i+1-Dimension*int(i/Dimension)))
             print(Right_Canonical[i])
-        print(Right_Canonical[2]*Right_Canonical[5]*Right_Canonical[8]*Right_Canonical[13]*Right_Canonical[19]*Right_Canonical[22]*LeftExtraNumber)
+        #print(Right_Canonical[2]*Right_Canonical[5]*Right_Canonical[8]*Right_Canonical[13]*Right_Canonical[19]*Right_Canonical[22]*LeftExtraNumber)
         #左数第n位第m个元素对应于A中的第(n-1)*Dimension+m-1个元素，如这里的对应于长度为6，维数为4的210132
         #但为什么这里多一个负号？
     elif str4=='no':
@@ -489,7 +529,10 @@ while(Length!=0):
     if str5=='yes':
         Truncated_Dimension=int(input('Please input upper bound:'))
         SVD_compressing_list=SVD_compressing(A,Length,Dimension,Truncated_Dimension)
-        print(SVD_compressing_list[2]*SVD_compressing_list[5]*SVD_compressing_list[8]*SVD_compressing_list[13]*SVD_compressing_list[19]*SVD_compressing_list[22]*LeftExtraNumber)
+        for i in range(Dimension*Length):
+            print('SVD压缩后第%d位的第%d个矩阵：'%(int(i/Dimension)+1,i+1-Dimension*int(i/Dimension)))
+            print(SVD_compressing_list[i])
+        #print(SVD_compressing_list[2]*SVD_compressing_list[5]*SVD_compressing_list[8]*SVD_compressing_list[13]*SVD_compressing_list[19]*SVD_compressing_list[22]*LeftExtraNumber)
         #左数第n位第m个元素对应于SVD_compressing_list中的第(n-1)*Dimension+m-1个元素，如这里的对应于长度为6，维数为4的210132
 
     elif str=='no':
