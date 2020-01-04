@@ -342,6 +342,7 @@ def Compress_a_matrix_product_state_iteratively(List,Length,Dimension,Truncated_
     M=SVD_compressing(List,Length,Dimension,Truncated_Dimension)#SVD压缩后为一个右规范的MPS
     IterationTimes=1#设置最大迭代次数
     site=1#表明优化到了第site个
+    left=1#表明是向左规范还是向右规范,left等于1表明向左规范，left等于0表示向右规范
 
     while IterationTimes<=10:
         #if : #这里是达到了迭代条件，即书上150那个式子，我还没弄懂那个式子怎么推出来的，先空着
@@ -365,14 +366,24 @@ def Compress_a_matrix_product_state_iteratively(List,Length,Dimension,Truncated_
                 BeforeResult=1#最里面一项的result是等于1的
             else:
                 BeforeResult=L
-            L=0#每次算完里面的都更新一下
+            R=0#每次算完里面的都更新一下
             for j in range(Dimension):      
                 R+=np.transpose(M[i*Dimension+j])*BeforeResult*List[i*Dimension+j]#因为这里是实数，所以直接转置就行    
 
         for i in range(Dimension):
             M[site*Dimension+i]=L*M[site*Dimension+i]*R
+        
+        if left==1 and site!=Length-1:
+            site+=1
+        elif left==1 and site==Length-1:
+            site+=1
+            left=0
+        elif left==0 and site!=2:
+            site=site-1
+        elif left==0 and site==2:
+            site=site-1
+            left=1
 
-        site+=1
         IterationTimes+=1
 
     return M        
@@ -527,7 +538,7 @@ while(Length!=0):
 
     str5=input('SVD compress(yes/no):')
     if str5=='yes':
-        Truncated_Dimension=int(input('Please input upper bound:'))
+        Truncated_Dimension=int(input('Please input the upper bound:'))
         SVD_compressing_list=SVD_compressing(A,Length,Dimension,Truncated_Dimension)
         for i in range(Dimension*Length):
             print('SVD压缩后第%d位的第%d个矩阵：'%(int(i/Dimension)+1,i+1-Dimension*int(i/Dimension)))
@@ -540,3 +551,20 @@ while(Length!=0):
 
     else:
         break
+    
+    str6=input('Iteratively compress(yes/no)')
+    if str6=='yes':
+        Truncated_Dimension=int(input('Please input the upper bound'))
+        Iteratively_compressing_list=Compress_a_matrix_product_state_iteratively(A,Length,Dimension,Truncated_Dimension)
+        for i in range(Dimension*Length):
+            print('迭代压缩后第%d位的第%d个矩阵：'%(int(i/Dimension)+1,i+1-Dimension*int(i/Dimension)))
+            print(Iteratively_compressing_list[i])
+        #print(Iteratively_compressing_list[2]*Iteratively_compressing_list[5]*Iteratively_compressing_list[8]*Iteratively_compressing_list[13]*Iteratively_compressing_list[19]*Iteratively_compressing_list[22]*LeftExtraNumber)
+        #左数第n位第m个元素对应于SVD_compressing_list中的第(n-1)*Dimension+m-1个元素，如这里的对应于长度为6，维数为4的210132
+
+    elif str6=='no':
+        print('')
+
+    else:
+        break
+    
