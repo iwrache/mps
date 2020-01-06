@@ -1,5 +1,7 @@
 import numpy as np
 from numpy import linalg
+import random
+import math
 Length=1
 
 #左规范
@@ -114,10 +116,10 @@ def MixedCanonical(l,Length,Dimension,Matrix):
 def OutputMPSMatrix(A,SMatrix,B,Dimension,Length,str,l):
 
     if str=='left':
-        for i in range(Dimension*Length):
-            print('第%d位的第%d个矩阵：'%(int(i/Dimension)+1,i+1-Dimension*int(i/Dimension)))
-            print(A[i])
-        #print(A[2]*A[5]*A[8]*A[13]*A[19]*A[22]*LeftExtraNumber)
+        #for i in range(Dimension*Length):
+           #print('第%d位的第%d个矩阵：'%(int(i/Dimension)+1,i+1-Dimension*int(i/Dimension)))
+            #print(A[i])
+        print(A[2]*A[5]*A[8]*A[13]*A[19]*A[22]*LeftExtraNumber)
         #左数第n位第m个元素对应于A中的第(n-1)*Dimension+m-1个元素，如这里的对应于长度为6，维数为4的210132
 
     elif str=='right':
@@ -338,49 +340,57 @@ def SVD_compressing(List,Length,Dimension,Truncated_Dimension):#List为要压缩
     return Left_B    
 
 
-def Compress_a_matrix_product_state_iteratively(List,Length,Dimension,Truncated_Dimension):#List为要压缩的矩阵#应该有bug，还没调
+def Compress_a_matrix_product_state_iteratively(List,Length,Dimension,Truncated_Dimension):#List要压缩的矩阵#应该还有bug？
     M=SVD_compressing(List,Length,Dimension,Truncated_Dimension)#SVD压缩后为一个右规范的MPS
     IterationTimes=1#设置最大迭代次数
-    site=1#表明优化到了第site个
-    left=1#表明是向左规范还是向右规范,left等于1表明向左规范，left等于0表示向右规范
+    site=0#表明优化到了第site个,site的取值范围为0到Length-1
+    left=1#表明是向左规范还是向右规范,left等于1表明左规范，left等于0表示向右规范
 
     while IterationTimes<=10:
-        #if : #这里是达到了迭代条件，即书上150那个式子，我还没弄懂那个式子怎么推出来的，先空着
-            #break
-        if site==1:
+        Norm=1
+        for i in range(Dimension):
+            Norm=Norm-np.trace(np.transpose(M[site*Dimension+i])*M[site*Dimension+i])#测试出来的Norm都是0，可能是数太小了？
+        if Norm<=math.pow(10,-10): #这里是达到了迭代条件的阀值，即书上150那个式子
+            break
+
+        if site==0:
             L=1
-        if site==L:
+        else:
+            for i in range(site):#从0到site-1
+                if i==0:
+                    BeforeResult_L=1#最里面一项的result是等于1的
+                else:
+                    BeforeResult_L=L
+                L=0#每次算完里面的都更新一下
+                for j in range(Dimension):      
+                    L+=np.transpose(M[i*Dimension+j])*BeforeResult_L*M[i*Dimension+j]#因为这里是实数，所以直接转置就行
+        
+
+        if site==Length-1:
             R=1
-        
-        for i in range(site):
-            if i==0:
-                BeforeResult=1#最里面一项的result是等于1的
-            else:
-                BeforeResult=L
-            L=0#每次算完里面的都更新一下
-            for j in range(Dimension):      
-                L+=np.transpose(M[i*Dimension+j])*BeforeResult*List[i*Dimension+j]#因为这里是实数，所以直接转置就行
-        
-        for i in range(Length,site,-1):
-            if i==0:
-                BeforeResult=1#最里面一项的result是等于1的
-            else:
-                BeforeResult=L
-            R=0#每次算完里面的都更新一下
-            for j in range(Dimension):      
-                R+=np.transpose(M[i*Dimension+j])*BeforeResult*List[i*Dimension+j]#因为这里是实数，所以直接转置就行    
+        else:       
+            for i in range(Length-1,site,-1):#从Length-1到site+1
+                if i==Length-1:
+                    BeforeResult_R=1#最里面一项的result是等于1的
+                else:
+                    BeforeResult_R=R
+                R=0#每次算完里面的都更新一下
+                for j in range(Dimension):     
+                    R+=M[i*Dimension+j]*BeforeResult_R*np.transpose(M[i*Dimension+j])#因为这里是实数，所以直接转置就行
+
+            
 
         for i in range(Dimension):
-            M[site*Dimension+i]=L*M[site*Dimension+i]*R
+                M[site*Dimension+i]=L*M[site*Dimension+i]*R
         
-        if left==1 and site!=Length-1:
+        if left==1 and site!=Length-2:
             site+=1
-        elif left==1 and site==Length-1:
+        elif left==1 and site==Length-2:
             site+=1
             left=0
-        elif left==0 and site!=2:
+        elif left==0 and site!=1:
             site=site-1
-        elif left==0 and site==2:
+        elif left==0 and site==1:
             site=site-1
             left=1
 
@@ -406,13 +416,19 @@ while(Length!=0):
     if str=='left': 
         Matrix=np.zeros((Dimension,Dimension**(Length-1)),dtype=np.float)
         SMatrix=0
-        k=0
+        test_result=-1
+        count=0
         print("please input matrix element")
         for i in range(Dimension):
             for j in range(Dimension**(Length-1)):
                 #Matrix[i,j]=input()
-                Matrix[i,j]=k
-                k+=1          
+                Matrix[i,j]=random.randint(1,1000)
+
+                if count==2334:
+                    test_result=Matrix[i,j]
+                    print('number 2234 is %d'%test_result)
+                count+=1
+                         
 
         flag=0#flag+1表示第几位
         l=0
@@ -422,13 +438,13 @@ while(Length!=0):
     elif str=='right':
         Matrix=np.zeros((Dimension**(Length-1),Dimension),dtype=np.float)
         SMatrix=0
-        k=0
+    
         print("please input matrix element")
         for i in range(Dimension**(Length-1)):
             for j in range(Dimension):
                 #Matrix[i,j]=input()
-                Matrix[i,j]=k
-                k+=1
+                Matrix[i,j]=random.randint(1,1000)
+                
 
         flag=Length#flag表示第flag个site
         l=0
@@ -438,13 +454,13 @@ while(Length!=0):
 
     elif str=='mixed':
         Matrix=np.zeros((Dimension,Dimension**(Length-1)),dtype=np.float)
-        k=0
+        
         #print("please input matrix element")
         for i in range(Dimension):
             for j in range(Dimension**(Length-1)):
                 #Matrix[i,j]=input()
-                Matrix[i,j]=k
-                k+=1 
+                Matrix[i,j]=random.randint(1,1000)
+                 
 
         l=int(input("please input site l:"))
         if l<=0 or l>Length:
@@ -470,12 +486,12 @@ while(Length!=0):
         print('那你得输入另外一个态前面的系数哦~')
         Matrix_1=np.zeros((Dimension,Dimension**(Length-1)),dtype=np.float)
 
-        k=0
+        
         for i in range(Dimension):
             for j in range(Dimension**(Length-1)):
                 #Matrix[i,j]=input()
-                Matrix_1[i,j]=k
-                k+=1
+                Matrix_1[i,j]=random.randint(1,1000)
+                
 
         A_1={}
         A_1=LeftCanonical(0,'left',Dimension,0,Matrix_1)
@@ -540,26 +556,26 @@ while(Length!=0):
     if str5=='yes':
         Truncated_Dimension=int(input('Please input the upper bound:'))
         SVD_compressing_list=SVD_compressing(A,Length,Dimension,Truncated_Dimension)
-        for i in range(Dimension*Length):
-            print('SVD压缩后第%d位的第%d个矩阵：'%(int(i/Dimension)+1,i+1-Dimension*int(i/Dimension)))
-            print(SVD_compressing_list[i])
-        #print(SVD_compressing_list[2]*SVD_compressing_list[5]*SVD_compressing_list[8]*SVD_compressing_list[13]*SVD_compressing_list[19]*SVD_compressing_list[22]*LeftExtraNumber)
+        #for i in range(Dimension*Length):
+            #print('SVD压缩后第%d位的第%d个矩阵：'%(int(i/Dimension)+1,i+1-Dimension*int(i/Dimension)))
+            #print(SVD_compressing_list[i])
+        print(SVD_compressing_list[2]*SVD_compressing_list[5]*SVD_compressing_list[8]*SVD_compressing_list[13]*SVD_compressing_list[19]*SVD_compressing_list[22]*LeftExtraNumber)
         #左数第n位第m个元素对应于SVD_compressing_list中的第(n-1)*Dimension+m-1个元素，如这里的对应于长度为6，维数为4的210132
 
-    elif str=='no':
-        print('')
+    elif str5=='no':
+        print('no')
 
     else:
         break
     
-    str6=input('Iteratively compress(yes/no)')
+    str6=input('Iteratively compress(yes/no):')
     if str6=='yes':
-        Truncated_Dimension=int(input('Please input the upper bound'))
+        Truncated_Dimension=int(input('Please input the upper bound:'))
         Iteratively_compressing_list=Compress_a_matrix_product_state_iteratively(A,Length,Dimension,Truncated_Dimension)
-        for i in range(Dimension*Length):
-            print('迭代压缩后第%d位的第%d个矩阵：'%(int(i/Dimension)+1,i+1-Dimension*int(i/Dimension)))
-            print(Iteratively_compressing_list[i])
-        #print(Iteratively_compressing_list[2]*Iteratively_compressing_list[5]*Iteratively_compressing_list[8]*Iteratively_compressing_list[13]*Iteratively_compressing_list[19]*Iteratively_compressing_list[22]*LeftExtraNumber)
+        #for i in range(Dimension*Length):
+            #print('迭代压缩后第%d位的第%d个矩阵：'%(int(i/Dimension)+1,i+1-Dimension*int(i/Dimension)))
+            #print(Iteratively_compressing_list[i])
+        print(Iteratively_compressing_list[2]*Iteratively_compressing_list[5]*Iteratively_compressing_list[8]*Iteratively_compressing_list[13]*Iteratively_compressing_list[19]*Iteratively_compressing_list[22]*LeftExtraNumber)
         #左数第n位第m个元素对应于SVD_compressing_list中的第(n-1)*Dimension+m-1个元素，如这里的对应于长度为6，维数为4的210132
 
     elif str6=='no':
