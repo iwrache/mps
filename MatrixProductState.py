@@ -497,7 +497,7 @@ while(Length!=0):
         A_1=LeftCanonical(0,'left',Dimension,0,Matrix_1)
         Overlap(A,SMatrix,B,A_1,Dimension,Length,str,l)
 
-    elif str1=='no':
+    elif str1=='不好，滚':
         print('嘤嘤嘤，你又欺负人家（眼泪汪汪）')
     
     else:
